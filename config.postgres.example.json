@@ -1,0 +1,20 @@
+{
+  "languages": ["eng", "fra", "deu"],
+  "data_dir": "data",
+  "output_dir": "output",
+  "num_processes": 4,
+  "extract_links": true,
+  "extract_tags": true,
+  "quality_filter": {
+    "enabled": true,
+    "file": "quality_sentences.txt"
+  },
+  "database": {
+    "type": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "database": "tatoeba",
+    "user": "postgres",
+    "password": "password"
+  }
+}
