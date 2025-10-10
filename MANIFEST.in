@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include requirements.txt
+include GETTING_STARTED.md
+include config.example.json
+include config.postgres.example.json
+recursive-include tatoeforge *.py
+recursive-include tests *.py
+recursive-include examples *.py

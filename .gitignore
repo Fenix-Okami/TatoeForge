@@ -205,3 +205,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# TatoeForge specific
+data/
+output/
+example_data/
+example_output/
+*.db
+*.parquet
+tatoeforge.log
+quality_sentences.txt

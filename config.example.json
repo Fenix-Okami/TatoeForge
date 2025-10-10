@@ -1,0 +1,16 @@
+{
+  "languages": ["eng", "fra", "deu", "spa", "jpn"],
+  "data_dir": "data",
+  "output_dir": "output",
+  "num_processes": 4,
+  "extract_links": true,
+  "extract_tags": false,
+  "quality_filter": {
+    "enabled": false,
+    "file": "quality_sentences.txt"
+  },
+  "database": {
+    "type": "sqlite",
+    "path": "tatoeba.db"
+  }
+}
