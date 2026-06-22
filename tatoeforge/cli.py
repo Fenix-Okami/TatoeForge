@@ -117,6 +117,39 @@ Examples:
         action='store_true',
         help='Extract sentence tags'
     )
+
+    parser.add_argument(
+        '--extract-audio',
+        action='store_true',
+        help='Extract Tatoeba audio metadata'
+    )
+
+    parser.add_argument(
+        '--download-audio',
+        action='store_true',
+        help='Download audio files referenced by extracted audio metadata'
+    )
+
+    parser.add_argument(
+        '--audio-dir',
+        type=str,
+        help='Directory for downloaded audio files'
+    )
+
+    audio_license_group = parser.add_mutually_exclusive_group()
+    audio_license_group.add_argument(
+        '--audio-reusable-only',
+        dest='audio_reusable_only',
+        action='store_true',
+        default=None,
+        help='Download only audio rows with non-empty reusable license metadata'
+    )
+    audio_license_group.add_argument(
+        '--include-unlicensed-audio',
+        dest='audio_reusable_only',
+        action='store_false',
+        help='Allow downloading audio rows with empty license metadata'
+    )
     
     parser.add_argument(
         '--verbose',
@@ -170,6 +203,19 @@ Examples:
         
         if args.extract_tags:
             config.set('extract_tags', True)
+
+        if args.extract_audio:
+            config.set('extract_audio', True)
+
+        if args.download_audio:
+            config.set('extract_audio', True)
+            config.set('download_audio', True)
+
+        if args.audio_dir:
+            config.set('audio_dir', args.audio_dir)
+
+        if args.audio_reusable_only is not None:
+            config.set('audio_reusable_only', args.audio_reusable_only)
         
         # Initialize pipeline
         logger.info("Initializing ETL pipeline")

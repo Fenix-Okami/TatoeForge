@@ -2,6 +2,13 @@
 
 __version__ = "0.1.0"
 
-from tatoeforge.etl import ETLPipeline
-
 __all__ = ["ETLPipeline"]
+
+
+def __getattr__(name):
+    """Load heavier ETL dependencies only when requested."""
+    if name == "ETLPipeline":
+        from tatoeforge.etl import ETLPipeline
+
+        return ETLPipeline
+    raise AttributeError(f"module 'tatoeforge' has no attribute {name!r}")

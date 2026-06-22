@@ -5,6 +5,10 @@
   "num_processes": 4,
   "extract_links": true,
   "extract_tags": true,
+  "extract_audio": false,
+  "download_audio": false,
+  "audio_dir": "audio",
+  "audio_reusable_only": true,
   "quality_filter": {
     "enabled": true,
     "file": "quality_sentences.txt"

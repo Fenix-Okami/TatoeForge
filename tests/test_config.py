@@ -97,6 +97,10 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.database_type, 'sqlite')
         self.assertFalse(config.use_quality_filter)
         self.assertEqual(config.num_processes, 4)
+        self.assertFalse(config.extract_audio)
+        self.assertFalse(config.download_audio)
+        self.assertEqual(config.audio_dir, 'audio')
+        self.assertTrue(config.audio_reusable_only)
 
 
 if __name__ == '__main__':

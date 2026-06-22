@@ -2,7 +2,6 @@
 
 import logging
 from typing import Optional, List
-from pathlib import Path
 
 from tatoeforge.extractors.tatoeba_extractor import TatoebaExtractor
 from tatoeforge.transformers.parquet_transformer import ParquetTransformer
@@ -93,6 +92,8 @@ class ETLPipeline:
         # Save to Parquet
         logger.info("Saving sentences to Parquet format")
         self.transformer.save_by_language(sentences_df, dataset_name="sentences")
+
+        sentence_ids = set(sentences_df['sentence_id'].astype(int).tolist())
         
         # Extract and save links if requested
         if self.config.get('extract_links', False):
@@ -122,6 +123,17 @@ class ETLPipeline:
                 ]
             
             self.transformer.save_by_language(tags_df, dataset_name="tags")
+
+        # Extract and save audio metadata if requested
+        if self.config.extract_audio or self.config.download_audio:
+            logger.info("Extracting sentence audio metadata")
+            audio_df = self.extractor.extract_audio_metadata(
+                sentence_ids=sentence_ids,
+                download_audio=self.config.download_audio,
+                audio_dir=self.config.audio_dir,
+                reusable_only=self.config.audio_reusable_only,
+            )
+            self.transformer.save_dataframe(audio_df, dataset_name="sentence_audio")
         
         logger.info("Extraction complete")
     
@@ -146,6 +158,7 @@ class ETLPipeline:
         logger.info(f"Loading data for languages: {languages or 'all'}")
         
         # Load sentences
+        sentences_df = None
         if languages:
             sentences_dfs = []
             for lang in languages:
@@ -162,10 +175,20 @@ class ETLPipeline:
         else:
             sentences_df = self.transformer.load_parquet("sentences")
             self.loader.load_sentences(sentences_df)
+
+        if sentences_df is None or sentences_df.empty:
+            logger.warning("No sentences loaded; skipping dependent datasets")
+            return
+
+        loaded_sentence_ids = set(sentences_df['sentence_id'].astype(int).tolist())
         
         # Load links if available
         try:
             links_df = self.transformer.load_parquet("links")
+            links_df = links_df[
+                links_df['sentence_id'].astype(int).isin(loaded_sentence_ids) &
+                links_df['translation_id'].astype(int).isin(loaded_sentence_ids)
+            ]
             self.loader.load_links(links_df)
         except FileNotFoundError:
             logger.info("No links data to load")
@@ -173,9 +196,34 @@ class ETLPipeline:
         # Load tags if available
         try:
             tags_df = self.transformer.load_parquet("tags")
+            tags_df = tags_df[tags_df['sentence_id'].astype(int).isin(loaded_sentence_ids)]
             self.loader.load_tags(tags_df)
         except FileNotFoundError:
             logger.info("No tags data to load")
+
+        # Load audio metadata if available
+        try:
+            audio_df = self.transformer.load_parquet("sentence_audio")
+            audio_df = audio_df[audio_df['sentence_id'].astype(int).isin(loaded_sentence_ids)]
+            self.loader.load_sentence_audio(audio_df)
+        except FileNotFoundError:
+            logger.info("No audio metadata to load")
+
+        # Load optional grammar annotations if available
+        try:
+            grammar_patterns_df = self.transformer.load_parquet("grammar_patterns")
+            self.loader.load_grammar_patterns(grammar_patterns_df)
+        except FileNotFoundError:
+            logger.info("No grammar pattern data to load")
+
+        try:
+            sentence_grammar_df = self.transformer.load_parquet("sentence_grammar_patterns")
+            sentence_grammar_df = sentence_grammar_df[
+                sentence_grammar_df['sentence_id'].astype(int).isin(loaded_sentence_ids)
+            ]
+            self.loader.load_sentence_grammar_patterns(sentence_grammar_df)
+        except FileNotFoundError:
+            logger.info("No sentence grammar annotations to load")
         
         # Optimize database
         logger.info("Optimizing database")

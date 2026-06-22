@@ -7,6 +7,10 @@ An ETL (Extract, Transform, Load) pipeline for [Tatoeba](https://tatoeba.org) da
 - **Extract**: Download and extract Tatoeba sentences, links, and tags using `tatoebatools`
 - **Transform**: Save data to Parquet format with language-based partitioning and indexing
 - **Load**: Load data into SQLite or PostgreSQL databases
+- **Vocabulary Retrieval**: Query sentences by normalized exact-token vocabulary matches
+- **Translations**: Retrieve direct Tatoeba-linked translations by target language
+- **Audio Metadata**: Extract Tatoeba audio metadata and optionally download reusable audio files
+- **Grammar Placeholders**: Store curated grammar pattern annotations for later lookup
 - **Multiprocessing**: Parallel processing for faster data transformation
 - **Quality Filtering**: Optional filtering based on trusted quality sentence lists
 - **Language Selection**: Extract and process specific languages
@@ -71,6 +75,10 @@ Create a JSON configuration file with the following structure:
   "num_processes": 4,
   "extract_links": true,
   "extract_tags": true,
+  "extract_audio": false,
+  "download_audio": false,
+  "audio_dir": "audio",
+  "audio_reusable_only": true,
   "quality_filter": {
     "enabled": true,
     "file": "quality_sentences.txt"
@@ -92,6 +100,10 @@ Create a JSON configuration file with the following structure:
 | `num_processes` | Number of parallel processes | CPU count |
 | `extract_links` | Extract translation links | `false` |
 | `extract_tags` | Extract sentence tags | `false` |
+| `extract_audio` | Extract Tatoeba audio metadata | `false` |
+| `download_audio` | Download audio files during extraction | `false` |
+| `audio_dir` | Directory for downloaded audio files | `audio` |
+| `audio_reusable_only` | Download only audio rows with non-empty reusable license metadata | `true` |
 | `quality_filter.enabled` | Enable quality filtering | `false` |
 | `quality_filter.file` | Path to quality IDs file | - |
 | `database.type` | Database type (`sqlite` or `postgres`) | `sqlite` |
@@ -156,6 +168,11 @@ tatoeforge load --languages eng,fra
 --quality-filter PATH     Path to quality IDs file
 --extract-links           Extract translation links
 --extract-tags            Extract sentence tags
+--extract-audio           Extract Tatoeba audio metadata
+--download-audio          Download audio files referenced by metadata
+--audio-dir DIR           Directory for downloaded audio files
+--audio-reusable-only     Download only rows with reusable license metadata
+--include-unlicensed-audio Allow empty-license audio downloads
 --verbose                 Enable verbose logging
 ```
 
@@ -238,6 +255,26 @@ Each Parquet file is:
 | id | INTEGER | Primary key |
 | sentence_id | INTEGER | Tagged sentence |
 | tag_name | TEXT/VARCHAR | Tag name |
+
+#### Sentence Tokens Table
+
+Generated from sentence text for fast exact-token lookup.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| sentence_id | INTEGER | Source sentence |
+| language | TEXT/VARCHAR | Language code |
+| token | TEXT | Original normalized-form token text |
+| normalized_token | TEXT | NFKC + casefold lookup token |
+| position | INTEGER | Token position in the sentence |
+
+#### Grammar Tables
+
+`grammar_patterns` stores curated pattern definitions. `sentence_grammar_patterns` links sentences to patterns with optional evidence text, confidence, and source metadata.
+
+#### Sentence Audio Table
+
+Stores Tatoeba audio metadata by `source` and `audio_id`, including sentence ID, contributor username, license, attribution URL, computed download URL, optional local path, download timestamp, and status.
 
 ## Programmatic Usage
 

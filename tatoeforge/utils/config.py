@@ -103,6 +103,26 @@ class Config:
     def data_dir(self) -> str:
         """Get data directory for downloaded files."""
         return self.get('data_dir', 'data')
+
+    @property
+    def extract_audio(self) -> bool:
+        """Whether to extract audio metadata."""
+        return self.get('extract_audio', False)
+
+    @property
+    def download_audio(self) -> bool:
+        """Whether to download audio files during audio extraction."""
+        return self.get('download_audio', False)
+
+    @property
+    def audio_dir(self) -> str:
+        """Directory for downloaded audio files."""
+        return self.get('audio_dir', 'audio')
+
+    @property
+    def audio_reusable_only(self) -> bool:
+        """Whether to download only audio rows with a reusable license field."""
+        return self.get('audio_reusable_only', True)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary.

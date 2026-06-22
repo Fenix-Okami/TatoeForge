@@ -34,8 +34,12 @@ class ParquetTransformer:
             dataset_name: Name of the dataset (used for directory naming)
         """
         if 'language' not in df.columns:
-            logger.error("DataFrame must contain 'language' column")
-            raise ValueError("DataFrame must contain 'language' column")
+            logger.info(
+                "DataFrame for dataset '%s' has no language column; saving as a single dataset",
+                dataset_name,
+            )
+            self.save_dataframe(df, dataset_name=dataset_name)
+            return
             
         output_path = self.output_dir / dataset_name
         output_path.mkdir(parents=True, exist_ok=True)
@@ -56,6 +60,26 @@ class ParquetTransformer:
                 self._save_language_partition(lang, df, output_path)
                 
         logger.info(f"Successfully saved data for {len(languages)} languages")
+
+    def save_dataframe(self, df: pd.DataFrame, dataset_name: str) -> None:
+        """Save a DataFrame as a single Parquet file."""
+        output_path = self.output_dir / dataset_name
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        if 'sentence_id' in df.columns:
+            df = df.sort_values('sentence_id')
+
+        file_path = output_path / "data.parquet"
+        table = pa.Table.from_pandas(df, preserve_index=False)
+        pq.write_table(
+            table,
+            file_path,
+            compression='snappy',
+            use_dictionary=True,
+            write_statistics=True
+        )
+
+        logger.info(f"Saved {len(df)} records for dataset '{dataset_name}' to {file_path}")
     
     def _save_language_partition(self, language: str, df: pd.DataFrame, output_path: Path) -> None:
         """Save data for a single language to Parquet file.
